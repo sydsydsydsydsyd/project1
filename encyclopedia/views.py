@@ -4,6 +4,7 @@ from django.http import HttpResponseRedirect
 from . import util
 import markdown2
 from django import forms
+from random import *
 
 class SearchForm(forms.Form):
     query = forms.CharField(label="Query")
@@ -36,4 +37,10 @@ def create(request):
 
 #placeholder
 def random(request):
-    return HttpResponse("random")
+    list = util.list_entries()
+    val = randint(1, (len(list)-1))
+    item = (list[val])
+    return render(request, "encyclopedia/article.html", {
+        "content": markdown2.markdown(util.get_entry(item)), "title": item,
+        "form": SearchForm()
+    })
