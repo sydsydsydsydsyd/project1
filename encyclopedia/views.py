@@ -13,6 +13,9 @@ class CreateForm(forms.Form):
     title = forms.CharField(label="title")
     content = forms.CharField(widget=forms.Textarea)
 
+class EditForm(forms.Form):
+    changes = forms.CharField(widget=forms.Textarea)
+
 def index(request):
     if request.method == "POST":
         form = SearchForm(request.POST)
@@ -36,6 +39,16 @@ def article(request, title):
         })
 
 #placeholder
+def random(request):
+    list = util.list_entries()
+    val = randint(1, (len(list)-1))
+    item = (list[val])
+    return render(request, "encyclopedia/article.html", {
+        "content": markdown2.markdown(util.get_entry(item)), "title": item,
+        "form": SearchForm()
+    })
+
+#placeholder
 def create(request):
     if request.method == "POST":
         form = CreateForm(request.POST)
@@ -55,12 +68,22 @@ def create(request):
             "contentform": CreateForm(), "form": SearchForm()
         })
 
-#placeholder
-def random(request):
-    list = util.list_entries()
-    val = randint(1, (len(list)-1))
-    item = (list[val])
-    return render(request, "encyclopedia/article.html", {
-        "content": markdown2.markdown(util.get_entry(item)), "title": item,
-        "form": SearchForm()
+def edit(request, title):
+    return render(request, "encyclopedia/edit.html", {
+        "title": title, "editform": EditForm(), "form": SearchForm()
     })
+
+def editconfirm(request, title):
+    if request.method == "POST":
+        form = EditForm(request.POST)
+        if form.is_valid():
+            changes = form.cleaned_data["changes"]
+            util.save_entry(title, changes)
+            return render(request, "encyclopedia/article.html", {
+                "content": markdown2.markdown(util.get_entry(title)), "title": title,
+                "form": SearchForm()
+            })
+    else:
+        return render(request, "encyclopedia/error.html", {
+            "form": SearchForm()
+        })
