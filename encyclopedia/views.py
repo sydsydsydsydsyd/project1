@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.http import HttpResponseRedirect
 from . import util
@@ -7,7 +7,7 @@ from django import forms
 from random import *
 
 class SearchForm(forms.Form):
-    query = forms.CharField(label="Query")
+    query = forms.CharField(label="query")
 
 class CreateForm(forms.Form):
     title = forms.CharField(label="title")
@@ -17,15 +17,22 @@ class EditForm(forms.Form):
     changes = forms.CharField(widget=forms.Textarea)
 
 def index(request):
+    entries = util.list_entries()
     if request.method == "POST":
-        form = SearchForm(request.POST)
-        if form.is_valid():
-            query = form.cleaned_data["query"]
-            return article(request, query)
+        searchform = SearchForm(request.POST)
+        if searchform.is_valid():
+            query = searchform.cleaned_data["query"]
+            if query not in entries:
+                return render(request, "encyclopedia/results.html", {
+                    "query": query, "entries": entries, "form": SearchForm()
+                })
+            else:
+                return redirect(article, query)
 
-    return render(request, "encyclopedia/index.html", {
-        "entries": util.list_entries(), "form": SearchForm()
-    })
+    if request.method == "GET":
+        return render(request, "encyclopedia/index.html", {
+            "entries": util.list_entries(), "form": SearchForm()
+        })
 
 def article(request, title):
     if title in util.list_entries():
@@ -38,17 +45,12 @@ def article(request, title):
             "form": SearchForm()
         })
 
-#placeholder
 def random(request):
     list = util.list_entries()
     val = randint(1, (len(list)-1))
     item = (list[val])
-    return render(request, "encyclopedia/article.html", {
-        "content": markdown2.markdown(util.get_entry(item)), "title": item,
-        "form": SearchForm()
-    })
+    return redirect(article, item)
 
-#placeholder
 def create(request):
     if request.method == "POST":
         form = CreateForm(request.POST)
@@ -59,31 +61,25 @@ def create(request):
                 return render(request, "encyclopedia/error.html")
             else:
                 util.save_entry(title, content)
-                return render(request, "encyclopedia/article.html", {
-                    "content": markdown2.markdown(util.get_entry(title)), "title": title,
-                    "form": SearchForm()
-                })
+                return redirect(article, title)
     else:
         return render(request, "encyclopedia/create.html", {
             "contentform": CreateForm(), "form": SearchForm()
         })
 
 def edit(request, title):
-    return render(request, "encyclopedia/edit.html", {
-        "title": title, "editform": EditForm(), "form": SearchForm()
-    })
+    if request.method == "GET":
+        return render(request, "encyclopedia/edit.html", {
+            "title": title, "editform": EditForm(), "form": SearchForm()
+        })
 
-def editconfirm(request, title):
     if request.method == "POST":
         form = EditForm(request.POST)
         if form.is_valid():
             changes = form.cleaned_data["changes"]
             util.save_entry(title, changes)
-            return render(request, "encyclopedia/article.html", {
-                "content": markdown2.markdown(util.get_entry(title)), "title": title,
+            return redirect(article, title)
+        else:
+            return render(request, "encyclopedia/error.html", {
                 "form": SearchForm()
             })
-    else:
-        return render(request, "encyclopedia/error.html", {
-            "form": SearchForm()
-        })
