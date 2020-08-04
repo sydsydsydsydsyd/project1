@@ -9,6 +9,10 @@ from random import *
 class SearchForm(forms.Form):
     query = forms.CharField(label="Query")
 
+class CreateForm(forms.Form):
+    title = forms.CharField(label="title")
+    content = forms.CharField(widget=forms.Textarea)
+
 def index(request):
     if request.method == "POST":
         form = SearchForm(request.POST)
@@ -33,7 +37,23 @@ def article(request, title):
 
 #placeholder
 def create(request):
-    return HttpResponse("create")
+    if request.method == "POST":
+        form = CreateForm(request.POST)
+        if form.is_valid():
+            title = form.cleaned_data["title"]
+            content = form.cleaned_data["content"]
+            if title in util.list_entries():
+                return render(request, "encyclopedia/error.html")
+            else:
+                util.save_entry(title, content)
+                return render(request, "encyclopedia/article.html", {
+                    "content": markdown2.markdown(util.get_entry(title)), "title": title,
+                    "form": SearchForm()
+                })
+    else:
+        return render(request, "encyclopedia/create.html", {
+            "contentform": CreateForm(), "form": SearchForm()
+        })
 
 #placeholder
 def random(request):
