@@ -1,0 +1,14 @@
+{% extends "encyclopedia/layout.html" %}
+
+{% block title %}
+    Error
+{% endblock %}
+
+{% block body %}
+    <h1>Error</h1>
+    <body>
+        An article already exists by this name:
+        <a href="/wiki/{{ title }}">{{ title }}</a>
+    </body>
+
+{% endblock %}
